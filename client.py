@@ -1,6 +1,7 @@
 import socket
 import select
 import errno
+import sys
 
 HEADER_LENGTH = 10
 
@@ -29,7 +30,7 @@ while True:
 
     # Wait for user to input a message
     message = input(f'{my_username} > ')
-
+    
     # If message is not empty - send it
     if message:
 

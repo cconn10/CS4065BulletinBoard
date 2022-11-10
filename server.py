@@ -31,6 +31,16 @@ clients = {}
 
 print(f'Listening for connections on {IP}:{PORT}...')
 
+def disconnect_user(clients, disconnected_user):
+    print('Closed connection from: {}'.format(clients[disconnected_user]['data'].decode('utf-8')))
+
+    # Remove from list for socket.socket()
+    sockets_list.remove(disconnected_user)
+
+    # Remove from our list of users
+    del clients[disconnected_user]
+
+
 # Handles message receiving
 def receive_message(client_socket):
 
@@ -105,6 +115,8 @@ while True:
 
             # If False, client disconnected, cleanup
             if message is False:
+                
+                #disconnect_user(clients, notified_socket)
                 print('Closed connection from: {}'.format(clients[notified_socket]['data'].decode('utf-8')))
 
                 # Remove from list for socket.socket()
@@ -113,6 +125,13 @@ while True:
                 # Remove from our list of users
                 del clients[notified_socket]
 
+                for client_socket in clients:
+
+                    # But don't sent it to sender
+                    if client_socket != notified_socket:
+                        
+                        client_socket.send(('Closed connection from:').encode())
+
                 continue
 
             # Get user by notified socket, so we will know who sent the message
@@ -120,6 +139,14 @@ while True:
 
             print(f'Received message from {user["data"].decode("utf-8")}: {message["data"].decode("utf-8")}')
 
+            messageText = message['data'].decode("utf-8")
+            if messageText.startswith("!!"):
+                match(messageText):
+                    case "!!leave":
+                        disconnect_user(clients, notified_socket)
+                        notified_socket.shutdown(socket.SHUT_RDWR)
+                        notified_socket.close()
+                        continue
             # Iterate over connected clients and broadcast message
             for client_socket in clients:
 
