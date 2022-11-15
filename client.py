@@ -4,8 +4,7 @@ import errno
 import sys
 
 HEADER_LENGTH = 10
-
-IP = "127.0.0.1"
+IP = "10.11.123.10"
 PORT = 6789
 my_username = input("Username: ")
 
@@ -26,7 +25,23 @@ username = my_username.encode('utf-8')
 username_header = f"{len(username):<{HEADER_LENGTH}}".encode('utf-8')
 client_socket.send(username_header + username)
 
+client_socket.setblocking(1)
+length = client_socket.recv(1)
+length = str(length)[2:-1]
+
+for i in range(int(length)):
+    client_socket.setblocking(1)
+    recentMessage = client_socket.recv(1024)
+    if not recentMessage:
+        break
+    recentMessage.decode('utf-8')
+    recentMessage = str(recentMessage)
+    print(recentMessage[2:-1])
+    client_socket.setblocking(0)
+client_socket.setblocking(0)
+
 while True:
+
 
     # Wait for user to input a message
     message = input(f'{my_username} > ')
@@ -61,7 +76,6 @@ while True:
             message_header = client_socket.recv(HEADER_LENGTH)
             message_length = int(message_header.decode('utf-8').strip())
             message = client_socket.recv(message_length).decode('utf-8')
-
             # Print message
             print(f'{username} > {message}')
 
