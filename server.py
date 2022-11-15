@@ -6,6 +6,8 @@ HEADER_LENGTH = 10
 IP = "127.0.0.1"
 PORT = 6789
 
+last2messages = []
+
 # Create a socket
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -67,6 +69,13 @@ while True:
             # Save username and username header
             clients[client_socket] = user
 
+            # DO IT HERE
+            client_socket.send(str(len(last2messages)).encode('utf-8'))
+
+            for i in last2messages:
+                encodedmessage = i.encode('utf-8')
+                client_socket.send(encodedmessage)
+
             print('Accepted new connection from {}:{}, username: {}'.format(*client_address, user['data'].decode('utf-8')))
 
             client_count_header = f"{len(clients):<{HEADER_LENGTH}}".encode('utf-8')
@@ -100,7 +109,11 @@ while True:
             user = clients[notified_socket]
 
             print(f'Received message from {user["data"].decode("utf-8")}: {message["data"].decode("utf-8")}')
-
+            archiveMessage = str(f'{user["data"].decode("utf-8")} > {message["data"].decode("utf-8")}')
+            last2messages.append(archiveMessage)
+            if len(last2messages) > 2:
+                last2messages = last2messages[1:]
+            
             messageText = message['data'].decode("utf-8")
             if messageText.startswith("!!"):
                 match(messageText):
