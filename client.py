@@ -30,6 +30,7 @@ def receive_message():
 
     
     message_length = int(message_header.decode('utf-8').strip())
+
     return client_socket.recv(message_length).decode('utf-8')
 
 # Sends messages to the server
@@ -39,7 +40,7 @@ def send_message(message_to_send):
     client_socket.send(message_header + message)
 
 send_message(my_username)
-    
+
 # Get list of users on server
 try:
     client_socket.setblocking(True)
@@ -59,7 +60,6 @@ try:
 except Exception as e:
     print(str(e))
     client_socket.setblocking(False)
-
 
 client_socket.setblocking(1)
 length = client_socket.recv(1)

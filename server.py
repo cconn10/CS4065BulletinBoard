@@ -27,9 +27,13 @@ clients = {}
 print(f'Listening for connections on {IP}:{PORT}...')
 
 def disconnect_user(clients, disconnected_user):
+
     print('Closed connection from: {}'.format(clients[disconnected_user]['data'].decode('utf-8')))
     sockets_list.remove(disconnected_user)
-    del clients[disconnected_user]
+
+    send_message_all('{} left the server!'.format(clients[disconnected_user]['data'].decode('utf-8')))
+
+    del clients[disconnected_user] 
 
 
 # Handles message receiving
@@ -50,6 +54,15 @@ def receive_message(client_socket):
     except:
         # Client closed connection violently
         return False
+
+def send_message_all(message): 
+    for socket in sockets_list:
+        if socket is not server_socket:
+            socket.send(
+                f"{len('server'):<{HEADER_LENGTH}}".encode('utf-8') +
+                'Server'.encode('utf-8') +
+                f"{len(message):<{HEADER_LENGTH}}".encode('utf-8') + 
+                (message.encode('utf-8')))
 
 while True:
 
@@ -97,9 +110,11 @@ while True:
                 client_socket.send(encodedmessage)
             else:
                 client_socket.send(str(0).encode('utf-8'))
-                
 
             print('Accepted new connection from {}:{}, username: {}'.format(*client_address, user['data'].decode('utf-8')))
+
+            send_message_all('{} joined the server!'.format(user['data'].decode('utf-8')))
+            
 
         # Else existing socket is sending a message
         else:
@@ -109,15 +124,7 @@ while True:
 
             # If false, client disconnected
             if message is False:
-                
-                print('Closed connection from: {}'.format(clients[notified_socket]['data'].decode('utf-8')))
-
-                # Remove from list for socket.socket()
-                sockets_list.remove(notified_socket)
-
-                # Remove from our list of users
-                del clients[notified_socket]
-
+                disconnect_user(clients, notified_socket)
                 continue
 
             # Get user by socket, so we know who sent the message
