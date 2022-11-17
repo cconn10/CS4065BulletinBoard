@@ -3,7 +3,7 @@ import select
 
 HEADER_LENGTH = 10
 
-IP = "192.168.1.46"
+IP = "127.0.0.1"
 PORT = 6789
 
 messageID = 0
@@ -75,6 +75,15 @@ while True:
             # Save username and username header
             clients[client_socket] = user
 
+
+            client_count_header = f"{len(clients):<{HEADER_LENGTH}}".encode('utf-8')
+
+            # Sends number of clients currently connected - 1, so as to not include the client it is sending to
+            client_socket.send(client_count_header + str(len(clients)-1).encode())
+            for client in clients:
+                if clients[client] != user:
+                    client_socket.send(clients[client]['header'] + clients[client]['data'])
+
             # Send last 2 messages to new client
             if len(messageList) >= 2:
                 client_socket.send(str(2).encode('utf-8'))
@@ -91,14 +100,6 @@ while True:
                 
 
             print('Accepted new connection from {}:{}, username: {}'.format(*client_address, user['data'].decode('utf-8')))
-
-            client_count_header = f"{len(clients):<{HEADER_LENGTH}}".encode('utf-8')
-
-            # Sends number of clients currently connected - 1, so as to not include the client it is sending to
-            client_socket.send(client_count_header + str(len(clients)-1).encode())
-            for client in clients:
-                if clients[client] != user:
-                    client_socket.send(clients[client]['header'] + clients[client]['data'])
 
         # Else existing socket is sending a message
         else:
