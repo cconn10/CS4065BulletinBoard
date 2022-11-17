@@ -4,7 +4,7 @@ import errno
 import sys
 
 HEADER_LENGTH = 10
-IP = "192.168.1.46"
+IP = "10.11.123.10"
 PORT = 6789
 my_username = input("Username: ")
 
@@ -19,12 +19,27 @@ client_socket.connect((IP, PORT))
 # Set connection to non-blocking state, so .recv() call won;t block, just return some exception we'll handle
 client_socket.setblocking(False)
 
-# Prepare username and header and send them
-# We need to encode username to bytes, then count number of bytes and prepare header of fixed size, that we encode to bytes as well
-username = my_username.encode('utf-8')
-username_header = f"{len(username):<{HEADER_LENGTH}}".encode('utf-8')
-client_socket.send(username_header + username)
+# Recieves messages sent by the server
+def receive_message():
+    message_header = client_socket.recv(HEADER_LENGTH)
 
+    # Server gracefully closed a connection
+    if not len(message_header):
+        print('Connection closed by the server')
+        sys.exit()
+
+    
+    message_length = int(message_header.decode('utf-8').strip())
+    return client_socket.recv(message_length).decode('utf-8')
+
+# Sends messages to the server
+def send_message(message_to_send):
+    message = message_to_send.encode('utf-8')
+    message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
+    client_socket.send(message_header + message)
+
+send_message(my_username)
+    
 client_socket.setblocking(1)
 length = client_socket.recv(1)
 length = str(length)[2:-1]
@@ -37,6 +52,27 @@ for i in range(int(length)):
     recentMessage = str(recentMessage)
     print(recentMessage[2:-1])
 client_socket.setblocking(0)
+
+# Get list of users on server
+try:
+    client_socket.setblocking(True)
+
+    client_count = int(receive_message())
+
+    if client_count < 1:
+        raise Exception('No Other Users on the Server')
+
+    print("Users on server:")
+
+    for i in range(client_count):
+        message = receive_message()
+        print(message)
+            
+    client_socket.setblocking(False)
+except Exception as e:
+    print(str(e))
+    client_socket.setblocking(False)
+
 
 while True:
 
