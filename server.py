@@ -31,13 +31,7 @@ def disconnect_user(clients, disconnected_user):
     print(message)
     sockets_list.remove(disconnected_user)
 
-    for socket in sockets_list:
-        if socket is not server_socket:
-            socket.send(
-                f"{len('server'):<{HEADER_LENGTH}}".encode('utf-8') +
-                'Server'.encode('utf-8') +
-                f"{len(message):<{HEADER_LENGTH}}".encode('utf-8') + 
-                (message.encode('utf-8')))
+    send_message_all(message)
 
     del clients[disconnected_user] 
 
@@ -55,6 +49,15 @@ def receive_message(client_socket):
     except:
         # Client closed connection violently
         return False
+
+def send_message_all(message): 
+    for socket in sockets_list:
+        if socket is not server_socket:
+            socket.send(
+                f"{len('server'):<{HEADER_LENGTH}}".encode('utf-8') +
+                'Server'.encode('utf-8') +
+                f"{len(message):<{HEADER_LENGTH}}".encode('utf-8') + 
+                (message.encode('utf-8')))
 
 while True:
 
@@ -96,7 +99,12 @@ while True:
                 encodedmessage = i.encode('utf-8')
                 client_socket.send(encodedmessage)
 
+            
             print('Accepted new connection from {}:{}, username: {}'.format(*client_address, user['data'].decode('utf-8')))
+
+            message = '{} joined the server!'.format(user['data'].decode('utf-8'))
+
+            send_message_all(message)
 
 
         # Else existing socket is sending a message

@@ -29,8 +29,6 @@ def receive_message():
     
     message_length = int(message_header.decode('utf-8').strip())
 
-    print(message_length)
-
     return client_socket.recv(message_length).decode('utf-8')
 
 # Sends messages to the server
