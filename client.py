@@ -28,6 +28,9 @@ def receive_message():
 
     
     message_length = int(message_header.decode('utf-8').strip())
+
+    print(message_length)
+
     return client_socket.recv(message_length).decode('utf-8')
 
 # Sends messages to the server
@@ -37,21 +40,6 @@ def send_message(message_to_send):
     client_socket.send(message_header + message)
 
 send_message(my_username)
-    
-client_socket.setblocking(1)
-length = client_socket.recv(1)
-length = str(length)[2:-1]
-
-for i in range(int(length)):
-    client_socket.setblocking(1)
-    recentMessage = client_socket.recv(1024)
-    if not recentMessage:
-        break
-    recentMessage.decode('utf-8')
-    recentMessage = str(recentMessage)
-    print(recentMessage[2:-1])
-    client_socket.setblocking(0)
-client_socket.setblocking(0)
 
 # Get list of users on server
 try:
@@ -73,6 +61,20 @@ except Exception as e:
     print(str(e))
     client_socket.setblocking(False)
 
+client_socket.setblocking(1)
+length = client_socket.recv(1)
+length = str(length)[2:-1]
+
+for i in range(int(length)):
+    client_socket.setblocking(1)
+    recentMessage = client_socket.recv(1024)
+    if not recentMessage:
+        break
+    recentMessage.decode('utf-8')
+    recentMessage = str(recentMessage)
+    print(recentMessage[2:-1])
+    client_socket.setblocking(0)
+client_socket.setblocking(0)
 
 while True:
 

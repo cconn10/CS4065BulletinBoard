@@ -26,9 +26,20 @@ clients = {}
 print(f'Listening for connections on {IP}:{PORT}...')
 
 def disconnect_user(clients, disconnected_user):
-    print('Closed connection from: {}'.format(clients[disconnected_user]['data'].decode('utf-8')))
+
+    message = 'Closed connection from: {}'.format(clients[disconnected_user]['data'].decode('utf-8'))
+    print(message)
     sockets_list.remove(disconnected_user)
-    del clients[disconnected_user]
+
+    for socket in sockets_list:
+        if socket is not server_socket:
+            socket.send(
+                f"{len('server'):<{HEADER_LENGTH}}".encode('utf-8') +
+                'Server'.encode('utf-8') +
+                f"{len(message):<{HEADER_LENGTH}}".encode('utf-8') + 
+                (message.encode('utf-8')))
+
+    del clients[disconnected_user] 
 
 def receive_message(client_socket):
     try:
@@ -69,14 +80,6 @@ while True:
             # Save username and username header
             clients[client_socket] = user
 
-            # DO IT HERE
-            client_socket.send(str(len(last2messages)).encode('utf-8'))
-
-            for i in last2messages:
-                encodedmessage = i.encode('utf-8')
-                client_socket.send(encodedmessage)
-
-            print('Accepted new connection from {}:{}, username: {}'.format(*client_address, user['data'].decode('utf-8')))
 
             client_count_header = f"{len(clients):<{HEADER_LENGTH}}".encode('utf-8')
 
@@ -86,6 +89,16 @@ while True:
                 if clients[client] != user:
                     client_socket.send(clients[client]['header'] + clients[client]['data'])
 
+            # DO IT HERE
+            client_socket.send(str(len(last2messages)).encode('utf-8'))
+
+            for i in last2messages:
+                encodedmessage = i.encode('utf-8')
+                client_socket.send(encodedmessage)
+
+            print('Accepted new connection from {}:{}, username: {}'.format(*client_address, user['data'].decode('utf-8')))
+
+
         # Else existing socket is sending a message
         else:
 
@@ -94,15 +107,7 @@ while True:
 
             # If false, client disconnected
             if message is False:
-                
-                print('Closed connection from: {}'.format(clients[notified_socket]['data'].decode('utf-8')))
-
-                # Remove from list for socket.socket()
-                sockets_list.remove(notified_socket)
-
-                # Remove from our list of users
-                del clients[notified_socket]
-
+                disconnect_user(clients, notified_socket)
                 continue
 
             # Get user by socket, so we know who sent the message
