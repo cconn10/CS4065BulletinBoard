@@ -4,7 +4,7 @@ import errno
 import sys
 
 HEADER_LENGTH = 10
-IP = "10.11.123.10"
+IP = "192.168.1.46"
 PORT = 6789
 my_username = input("Username: ")
 
@@ -30,14 +30,12 @@ length = client_socket.recv(1)
 length = str(length)[2:-1]
 
 for i in range(int(length)):
-    client_socket.setblocking(1)
     recentMessage = client_socket.recv(1024)
     if not recentMessage:
         break
     recentMessage.decode('utf-8')
     recentMessage = str(recentMessage)
     print(recentMessage[2:-1])
-    client_socket.setblocking(0)
 client_socket.setblocking(0)
 
 while True:
@@ -53,6 +51,18 @@ while True:
         message = message.encode('utf-8')
         message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
         client_socket.send(message_header + message)
+
+        #TODO we may have to rewrite client and Server to use SELF, this and any other time when a client sends a request
+        # to server will break when it's not the most recent client
+        message = message.decode('utf-8')
+        if message.startswith("!!getMessage"):
+            client_socket.setblocking(1)
+            recentMessage = client_socket.recv(1024)
+            recentMessage.decode('utf-8')
+            print(str(recentMessage)[2:-1])
+            client_socket.setblocking(0)
+
+        message = message.encode('utf-8')
 
     try:
         # Now we want to loop over received messages (there might be more than one) and print them
