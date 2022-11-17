@@ -143,15 +143,12 @@ while True:
                         print(idCmd)
                         print(f'{user["data"].decode("utf-8")} requested the message: {messageList[idCmd]}')
                         # If ID is valid print message
-                        #TODO Change it to where only the content is sent and not full message,  
-                        # we may have to rewrite client and Server to use SELF, this and any other time when a client sends a request
-                        # to server will break when trying to send something back to client if it's not the most recent client
                         if idCmd >= 0 and idCmd < len(messageList):
                             sendMessage = messageList[idCmd].encode('utf-8')
 
-                            client_socket.send(sendMessage)
+                            notified_socket.send(sendMessage)
                     except:
-                        client_socket.send("Wrong parameters or messageID out of range, ex: '!!getMessage 1'".encode('utf-8'))
+                        notified_socket.send("Wrong parameters or messageID out of range, ex: '!!getMessage 1'".encode('utf-8'))
 
             # Iterate over connected clients and broadcast message
             for client_socket in clients:
