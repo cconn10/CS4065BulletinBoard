@@ -137,16 +137,13 @@ while True:
                         continue
                 if messageText.startswith("!!getMessage"):
                     try:
-                        print(messageList)
                         # Get ID and check to see if it is valid
                         idCmd = int(messageText[12:])
-                        print(idCmd)
                         print(f'{user["data"].decode("utf-8")} requested the message: {messageList[idCmd]}')
                         # If ID is valid print message
                         if idCmd >= 0 and idCmd < len(messageList):
-                            sendMessage = messageList[idCmd].encode('utf-8')
-
-                            notified_socket.send(sendMessage)
+                            notified_socket.send(f'Message of ID {idCmd}: {messageList[idCmd]}'.encode('utf-8'))
+                        
                     except:
                         notified_socket.send("Wrong parameters or messageID out of range, ex: '!!getMessage 1'".encode('utf-8'))
 
