@@ -4,7 +4,7 @@ import errno
 import sys
 
 HEADER_LENGTH = 10
-IP = "127.0.0.1"
+IP = "192.168.1.46"
 PORT = 6789
 my_username = input("Username: ")
 
@@ -40,7 +40,7 @@ def send_message(message_to_send):
     client_socket.send(message_header + message)
 
 send_message(my_username)
-
+    
 # Get list of users on server
 try:
     client_socket.setblocking(True)
@@ -59,44 +59,22 @@ try:
     client_socket.setblocking(False)
 except Exception as e:
     print(str(e))
-    client_socket.setblocking(False)
+client_socket.setblocking(False)
 
 client_socket.setblocking(1)
-length = client_socket.recv(1)
-length = str(length)[2:-1]
-
-for i in range(int(length)):
-    recentMessage = client_socket.recv(1024)
-    if not recentMessage:
-        break
-    recentMessage.decode('utf-8')
-    recentMessage = str(recentMessage)
-    print(recentMessage[2:-1])
+recentMessage = client_socket.recv(1024)
+recentMessage = str(recentMessage.decode('utf-8'))
+recentMessage = recentMessage.split("\n")
+print("Recent Messages:")
+if recentMessage[0] == '0':
+    print("None")
+for message in recentMessage[1:]:
+    print(message)
 client_socket.setblocking(0)
 
-while True:
 
 
-    # Wait for user to input a message
-    message = input(f'{my_username} > ')
-    
-    # If message is not empty - send it
-    if message:
-
-        # Encode message to bytes, prepare header and convert to bytes, like for username above, then send
-        message = message.encode('utf-8')
-        message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
-        client_socket.send(message_header + message)
-
-        message = message.decode('utf-8')
-        if message.startswith("!!getMessage"):
-            client_socket.setblocking(1)
-            recentMessage = client_socket.recv(1024)
-            recentMessage.decode('utf-8')
-            print(str(recentMessage)[2:-1])
-            client_socket.setblocking(0)
-
-        message = message.encode('utf-8')
+def recieveAllMessages():
 
     try:
         # Now we want to loop over received messages (there might be more than one) and print them
@@ -132,10 +110,37 @@ while True:
             print('Reading error: {}'.format(str(e)))
             sys.exit()
 
-        # We just did not receive anything
-        continue
 
     except Exception as e:
         # Any other exception - something happened, exit
         print('Reading error: '.format(str(e)))
         sys.exit()
+
+while True:
+
+    # Wait for user to input a message
+    message = input(f'{my_username} > ')
+     
+    # If message is not empty - send it
+    if message:
+
+        
+        # Encode message to bytes, prepare header and convert to bytes, like for username above, then send
+        recieveAllMessages()
+        message = message.encode('utf-8')
+        message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
+        client_socket.send(message_header + message)
+
+        message = message.decode('utf-8')
+        if message.startswith("!!getMessage"):
+            client_socket.setblocking(1)
+            recentMessage = client_socket.recv(1024)
+            recentMessage.decode('utf-8')
+            recentMessage = str(recentMessage)
+            recentMessage = recentMessage.split("'")
+            print(recentMessage[1])
+            client_socket.setblocking(0)
+
+        message = message.encode('utf-8')
+    
+    

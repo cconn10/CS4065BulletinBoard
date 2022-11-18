@@ -3,7 +3,7 @@ import select
 
 HEADER_LENGTH = 10
 
-IP = "127.0.0.1"
+IP = "192.168.1.46"
 PORT = 6789
 
 messageID = 0
@@ -33,7 +33,7 @@ def disconnect_user(clients, disconnected_user):
 
     send_message_all('{} left the server!'.format(clients[disconnected_user]['data'].decode('utf-8')))
 
-    del clients[disconnected_user] 
+    del clients[disconnected_user]
 
 
 # Handles message receiving
@@ -97,19 +97,19 @@ while True:
                 if clients[client] != user:
                     client_socket.send(clients[client]['header'] + clients[client]['data'])
 
-            # Send last 2 messages to new client
+
+            # Send last 2 messages to new client, it puts last 2 messages all in one string for more consistent results
+            string = '0'
+            client_socket.setblocking(1)
             if len(messageList) >= 2:
-                client_socket.send(str(2).encode('utf-8'))
-                encodedmessage = messageList[messageID - 2].encode('utf-8')
-                client_socket.send(encodedmessage)
-                encodedmessage = messageList[messageID - 1].encode('utf-8')
-                client_socket.send(encodedmessage)
+                string = f'2\n{messageList[messageID - 2]}\n{messageList[messageID - 1]}'
+                print(string)
             elif len(messageList) == 1:
-                client_socket.send(str(1).encode('utf-8'))
-                encodedmessage = messageList[messageID - 1].encode('utf-8')
-                client_socket.send(encodedmessage)
-            else:
-                client_socket.send(str(0).encode('utf-8'))
+                string = f'1\n{messageList[messageID - 1]}'
+                print(string)
+            client_socket.send(string.encode('utf-8'))
+            client_socket.setblocking(0)
+                
 
             print('Accepted new connection from {}:{}, username: {}'.format(*client_address, user['data'].decode('utf-8')))
 
@@ -145,18 +145,14 @@ while True:
                         continue
                 if messageText.startswith("!!getMessage"):
                     try:
-                        print(messageList)
                         # Get ID and check to see if it is valid
                         idCmd = int(messageText[12:])
-                        print(idCmd)
                         print(f'{user["data"].decode("utf-8")} requested the message: {messageList[idCmd]}')
                         # If ID is valid print message
                         if idCmd >= 0 and idCmd < len(messageList):
-                            sendMessage = messageList[idCmd].encode('utf-8')
-
-                            notified_socket.send(sendMessage)
+                            notified_socket.send(f'Message of ID {idCmd}: {messageList[idCmd]}'.encode('utf-8'))               
                     except:
-                        notified_socket.send("Wrong parameters or messageID out of range, ex: '!!getMessage 1'".encode('utf-8'))
+                        notified_socket.send("Wrong parameters or messageID out of range, ex: !!getMessage 1".encode('utf-8'))
 
             # Iterate over connected clients and broadcast message
             for client_socket in clients:
