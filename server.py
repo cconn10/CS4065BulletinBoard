@@ -95,6 +95,7 @@ while True:
             client_socket.send(client_count_header + str(len(clients)-1).encode())
             for client in clients:
                 if clients[client] != user:
+                    print()
                     client_socket.send(clients[client]['header'] + clients[client]['data'])
 
 
@@ -150,7 +151,7 @@ while True:
                         print(f'{user["data"].decode("utf-8")} requested the message: {messageList[idCmd]}')
                         # If ID is valid print message
                         if idCmd >= 0 and idCmd < len(messageList):
-                            notified_socket.send(f'Message of ID {idCmd}: {messageList[idCmd]}'.encode('utf-8'))               
+                            notified_socket.send(f'Message of ID {idCmd}: {messageList[idCmd]}'.encode('utf-8'))
                     except:
                         notified_socket.send("Wrong parameters or messageID out of range, ex: !!getMessage 1".encode('utf-8'))
 
