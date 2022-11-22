@@ -149,11 +149,12 @@ while True:
                     try:
                         # Get ID and check to see if it is valid
                         idCmd = int(messageText[12:])
-                        getSubject = messageList[idCmd].split(" ")[2]
+                        index = messageList[idCmd].index(">")
+                        getSubject = messageList[idCmd][index + 2:]
                         print(f'{user["data"].decode("utf-8")} requested the message: {getSubject}')
                         # If ID is valid print message
                         if idCmd >= 0 and idCmd < len(messageList):
-                            notified_socket.send(f'Message of ID {idCmd}: {getSubject}'.encode('utf-8'))
+                            notified_socket.send(f'Message of ID {idCmd}:{getSubject}'.encode('utf-8'))
                     except:
                         notified_socket.send("Wrong parameters or messageID out of range, ex: !!getMessage 1".encode('utf-8'))
 

@@ -73,8 +73,10 @@ if recentMessage[0] == '0':
 else:
     for i in range(1, len(recentMessage), 2):
         messageID = int(recentMessage[i])
-        username = recentMessage[i + 1].split(" ")[0]
-        subject = recentMessage[i + 1].split(" ")[2]
+        # Splits message into username and subject
+        index = recentMessage[i + 1].index(">")
+        username = recentMessage[i + 1][:index - 2]
+        subject = recentMessage[i + 1][index + 2:]
         print(f"MessageID: {str(messageID)}\nSender: {username}\nDate: {date.today()}\nSubject: {subject}\n")
     messageID = messageID + 1
 client_socket.setblocking(0)
