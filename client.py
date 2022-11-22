@@ -2,7 +2,9 @@ import socket
 import select
 import errno
 import sys
+from datetime import date
 
+messageID = 0
 HEADER_LENGTH = 10
 IP = "192.168.1.46"
 PORT = 6789
@@ -68,14 +70,19 @@ recentMessage = recentMessage.split("\n")
 print("Recent Messages:")
 if recentMessage[0] == '0':
     print("None")
-for message in recentMessage[1:]:
-    print(message)
+else:
+    for i in range(1, len(recentMessage), 2):
+        messageID = int(recentMessage[i])
+        username = recentMessage[i + 1].split(" ")[0]
+        subject = recentMessage[i + 1].split(" ")[2]
+        print(f"MessageID: {str(messageID)}\nSender: {username}\nDate: {date.today()}\nSubject: {subject}\n")
+    messageID = messageID + 1
 client_socket.setblocking(0)
 
 
 
 def recieveAllMessages():
-
+    global messageID
     try:
         # Now we want to loop over received messages (there might be more than one) and print them
         while True:
@@ -99,7 +106,11 @@ def recieveAllMessages():
             message_length = int(message_header.decode('utf-8').strip())
             message = client_socket.recv(message_length).decode('utf-8')
             # Print message
-            print(f'{username} > {message}')
+            if not message.endswith("joined the server!") and not username == 'Server':
+                print(f"MessageID: {str(messageID)}\nSender: {username}\nPost Date: {date.today()}\nSubject: {message}\n")
+                messageID = messageID + 1
+            else:
+                print(f'{username} > {message}\n')
 
     except IOError as e:
         # This is normal on non blocking connections - when there are no incoming data error is going to be raised
@@ -113,23 +124,28 @@ def recieveAllMessages():
 
     except Exception as e:
         # Any other exception - something happened, exit
-        print('Reading error: '.format(str(e)))
+        print('Reading error: {}'.format(str(e)))
         sys.exit()
 
 while True:
 
     # Wait for user to input a message
-    message = input(f'{my_username} > ')
-     
+    message = input(f'{my_username}: ')
+    print()
+
     # If message is not empty - send it
     if message:
-
         
         # Encode message to bytes, prepare header and convert to bytes, like for username above, then send
         recieveAllMessages()
+        test = f"MessageID: {str(messageID)}\nSender: {my_username}\nDate: {date.today()}\nSubject: {message}\n"
+        print("Message Sent:\n" + test)
         message = message.encode('utf-8')
         message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
+        
         client_socket.send(message_header + message)
+
+        messageID = messageID + 1
 
         message = message.decode('utf-8')
         if message.startswith("!!getMessage"):

@@ -1,6 +1,8 @@
 import socket
 import select
+from datetime import date
 
+messageID = 0
 HEADER_LENGTH = 10
 
 IP = "192.168.1.46"
@@ -103,11 +105,9 @@ while True:
             string = '0'
             client_socket.setblocking(1)
             if len(messageList) >= 2:
-                string = f'2\n{messageList[messageID - 2]}\n{messageList[messageID - 1]}'
-                print(string)
+                string = f'2\n{messageID - 2}\n{messageList[messageID - 2]}\n{messageID - 1}\n{messageList[messageID - 1]}'
             elif len(messageList) == 1:
-                string = f'1\n{messageList[messageID - 1]}'
-                print(string)
+                string = f'1\n{messageID - 1}\n{messageList[messageID - 1]}'
             client_socket.send(string.encode('utf-8'))
             client_socket.setblocking(0)
                 
@@ -135,7 +135,8 @@ while True:
             archiveMessage = str(f'{user["data"].decode("utf-8")} > {message["data"].decode("utf-8")}')
             messageList[messageID] = archiveMessage
             messageID = messageID + 1
-            
+            #send_message_all(f'MessageID from server: {str(messageID + 1)}')
+            #print("MessageID:", messageID)
             messageText = message['data'].decode("utf-8")
             if messageText.startswith("!!"):
                 match(messageText):
@@ -148,10 +149,11 @@ while True:
                     try:
                         # Get ID and check to see if it is valid
                         idCmd = int(messageText[12:])
-                        print(f'{user["data"].decode("utf-8")} requested the message: {messageList[idCmd]}')
+                        getSubject = messageList[idCmd].split(" ")[2]
+                        print(f'{user["data"].decode("utf-8")} requested the message: {getSubject}')
                         # If ID is valid print message
                         if idCmd >= 0 and idCmd < len(messageList):
-                            notified_socket.send(f'Message of ID {idCmd}: {messageList[idCmd]}'.encode('utf-8'))
+                            notified_socket.send(f'Message of ID {idCmd}: {getSubject}'.encode('utf-8'))
                     except:
                         notified_socket.send("Wrong parameters or messageID out of range, ex: !!getMessage 1".encode('utf-8'))
 
