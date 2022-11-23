@@ -69,7 +69,7 @@ def send_message_all(message):
                 f"{len(message):<{HEADER_LENGTH}}".encode('utf-8') + 
                 (message.encode('utf-8')))
 
-def getUsers(client_count_header, clients):
+def get_users(clients):
     client_count_header = f"{len(clients):<{HEADER_LENGTH}}".encode('utf-8')
 
     # Sends number of clients currently connected - 1, so as to not include the client it is sending to
@@ -78,6 +78,15 @@ def getUsers(client_count_header, clients):
         if clients[client] != user:
             print()
             client_socket.send(clients[client]['header'] + clients[client]['data'])
+
+def get_rooms():
+    room_count_header = f"{len(room_users):<{HEADER_LENGTH}}".encode('utf-8')
+
+    # Sends number of clients currently connected - 1, so as to not include the client it is sending to
+    client_socket.send(room_count_header + str(len(room_users)).encode())
+    for room in room_users:
+        print()
+        client_socket.send(f"{len(room):<{HEADER_LENGTH}}".encode('utf-8') + room.encode('utf-8'))
 
 while True:
 
@@ -165,11 +174,18 @@ while True:
             messageText = message['data'].decode("utf-8").lower()
             if(messageText.startswith("!!")):
                 if messageText.startswith("!!leave"):
-                    disconnect_user(clients, notified_socket)
-                    notified_socket.shutdown(socket.SHUT_RDWR)
-                    notified_socket.close()
+                    if(len(messageText) > 7):
+                        print("foo")
+                        room_users[messageText[8:]].remove(notified_socket)
+                    else:
+                        print("foo")
+                        disconnect_user(clients, notified_socket)
+                        notified_socket.shutdown(socket.SHUT_RDWR)
+                        notified_socket.close()
                 elif messageText.startswith("!!users"):
-                    getUsers(client_count_header, clients)
+                    get_users(clients)
+                elif messageText.startswith("!!rooms"):
+                    get_rooms()
                 elif messageText.startswith("!!getmessage"):
                     try:
                         for room in room_users:
@@ -190,38 +206,15 @@ while True:
                     if roomName not in room_users:
                         messageList[roomName] = []
                         room_users[roomName] = []
-                        notified_socket.send(f"Created Room: {roomName}".encode('utf-8'))
-                        notified_socket.send('0'.encode('utf-8'))
-                    else:
-                        notified_socket.send(f"Joined Room: {roomName}".encode('utf-8'))
-                        notified_socket.send(str(len(messageList[roomName])).encode('utf-8'))
-                    for room in room_users:
-                        if notified_socket in room_users[room]:
-                            room_users[room].remove(notified_socket) 
-                    room_users[roomName].append(notified_socket)
-                elif messageText.startswith("!!rooms"):
-                    sendMessage = ""
-                    for room in room_users:
-                        sendMessage = sendMessage + str(f'{room} + ')
-                    sendMessage = sendMessage[:-3]
-                    notified_socket.send(sendMessage.encode('utf-8'))
-                    continue
-            else:
-                for room in room_users:
-                    if notified_socket in room_users[room]:
-                        dict = {}
-                        dict['MessageID'] = len(messageList[room])
-                        dict['Sender'] = user["data"].decode("utf-8")
-                        dict['Date'] = str(date.today())
-                        dict['Subject'] = message["data"].decode("utf-8")
-                        messageList[room].append(dict)
-                messageID = messageID + 1
+                    room_users[roomName].append(notified_socket) 
+                continue
 
             for room in room_users:
                 currentRoom = room_users[room]
                 if notified_socket in currentRoom:
                     # Iterate over connected clients and broadcast message
                     for client_socket in currentRoom:
+                        
                         # But don't sent it to sender
                         if client_socket != notified_socket:
 
