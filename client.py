@@ -20,6 +20,8 @@ client_socket.connect((IP, PORT))
 # Set connection to non-blocking state, so .recv() call won;t block, just return some exception we'll handle
 client_socket.setblocking(False)
 
+commands = ["!!help", "!!getMessage", "!!leave", "!!users", "!!rooms", "!!join"]
+
 # Recieves messages sent by the server
 def receive_message():
     message_header = client_socket.recv(HEADER_LENGTH)
@@ -38,24 +40,9 @@ def send_message(message_to_send):
     message = message_to_send.encode('utf-8')
     message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
     client_socket.send(message_header + message)
-
-isUsed = True
-while isUsed:
-    my_username = input("Username: ")
-
-    send_message(my_username)
-    client_socket.setblocking(1)
-    isUsed = client_socket.recv(1)
-    client_socket.setblocking(0)
-    isUsed = isUsed.decode('utf-8')
-    
-    if isUsed == "1":
-        print("Please input a unique username")
-    else:
-        break
     
 # Get list of users on server
-def getUsers():
+def get_users():
     try:
         client_socket.setblocking(True)
 
@@ -75,7 +62,40 @@ def getUsers():
         print(str(e))
     client_socket.setblocking(False)
 
-getUsers()
+def get_rooms():
+    try:
+        client_socket.setblocking(True)
+
+        rooms_count = int(receive_message())
+
+        print("Rooms on Server:")
+        print(rooms_count)
+        for i in range(rooms_count):
+
+            message = receive_message()
+            print(message)
+                
+        client_socket.setblocking(False)
+    except Exception as e:
+        print(str(e))
+    client_socket.setblocking(False)
+
+isUsed = True
+while isUsed:
+    my_username = input("Username: ")
+
+    send_message(my_username)
+    client_socket.setblocking(1)
+    isUsed = client_socket.recv(1)
+    client_socket.setblocking(0)
+    isUsed = isUsed.decode('utf-8')
+    
+    if isUsed == "1":
+        print("Please input a unique username")
+    else:
+        break
+
+get_users()
 
 client_socket.setblocking(1)
 recentMessage = client_socket.recv(1024)
@@ -181,13 +201,18 @@ while True:
             print("List of Commands:")
             print(f"!!getMessage {{id}}: Get Message with Specific Message ID as Parameter.")
             print("!!help: Get List of Commands.")
-            print("!!leave: Leave the Chat.")
+            print("!!leave: Disconnect from the Server.")
+            print(f"!!leave {{chat name}}: Leave a Specific Chat Room.")
             print("!!users: Get List of Other Users in Chat Room.")
             print("!!rooms: Get List of Existing Chat Rooms.")
-            print(f"!!join {{name}}: Join Room with the Specified Name or Create Room if it Doesn't Exist.")
+            print(f"!!join {{chat name}}: Join Room with the Specified Name or Create Room if it Doesn't Exist.")
             print()
         if message.startswith("!!users"):
-            getUsers()
+            get_users()
+        if message.startswith("!!rooms"):
+            get_rooms()
+        if message.startswith("!!") and message.split()[0] not in commands: 
+            print("Command not recognized, use !!help to see list of available commands")
 
     
     
