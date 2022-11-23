@@ -23,7 +23,7 @@ server_socket.listen()
 
 sockets_list = [server_socket]
 
-room_users = {"Public": []}
+room_users = {"public": []}
 
 # List of connected clients - socket as a key, user header and name as data
 clients = {}
@@ -68,7 +68,7 @@ def send_message_all(message):
                 f"{len(message):<{HEADER_LENGTH}}".encode('utf-8') + 
                 (message.encode('utf-8')))
 
-def getUsers(client_count_header, clients):
+def get_users(clients):
     client_count_header = f"{len(clients):<{HEADER_LENGTH}}".encode('utf-8')
 
     # Sends number of clients currently connected - 1, so as to not include the client it is sending to
@@ -77,6 +77,15 @@ def getUsers(client_count_header, clients):
         if clients[client] != user:
             print()
             client_socket.send(clients[client]['header'] + clients[client]['data'])
+
+def get_rooms():
+    room_count_header = f"{len(room_users):<{HEADER_LENGTH}}".encode('utf-8')
+
+    # Sends number of clients currently connected - 1, so as to not include the client it is sending to
+    client_socket.send(room_count_header + str(len(room_users)).encode())
+    for room in room_users:
+        print()
+        client_socket.send(f"{len(room):<{HEADER_LENGTH}}".encode('utf-8') + room.encode('utf-8'))
 
 while True:
 
@@ -112,7 +121,7 @@ while True:
 
             # Save username and username header
             clients[client_socket] = user
-            room_users["Public"].append(client_socket) 
+            room_users["public"].append(client_socket) 
 
             print(room_users)
 
@@ -165,11 +174,18 @@ while True:
             messageText = message['data'].decode("utf-8").lower()
             if(messageText.startswith("!!")):
                 if messageText.startswith("!!leave"):
-                    disconnect_user(clients, notified_socket)
-                    notified_socket.shutdown(socket.SHUT_RDWR)
-                    notified_socket.close()
+                    if(len(messageText) > 7):
+                        print("foo")
+                        room_users[messageText[8:]].remove(notified_socket)
+                    else:
+                        print("foo")
+                        disconnect_user(clients, notified_socket)
+                        notified_socket.shutdown(socket.SHUT_RDWR)
+                        notified_socket.close()
                 elif messageText.startswith("!!users"):
-                    getUsers(client_count_header, clients)
+                    get_users(clients)
+                elif messageText.startswith("!!rooms"):
+                    get_rooms()
                 elif messageText.startswith("!!getMessage"):
                     try:
                         # Get ID and check to see if it is valid
@@ -186,12 +202,7 @@ while True:
                     roomName = messageText[7:]
                     if roomName not in room_users:
                         room_users[roomName] = []
-                    for room in room_users:
-                        if notified_socket in room_users[room]:
-                            room_users[room].remove(notified_socket) 
                     room_users[roomName].append(notified_socket) 
-                else:
-                    notified_socket.send("Command not recognized, use !!help to see list of available commands")
                 continue
 
             for room in room_users:
@@ -199,7 +210,6 @@ while True:
                 if notified_socket in currentRoom:
                     # Iterate over connected clients and broadcast message
                     for client_socket in currentRoom:
-                        print(currentRoom)
                         # But don't sent it to sender
                         if client_socket != notified_socket:
 
