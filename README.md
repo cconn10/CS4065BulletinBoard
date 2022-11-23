@@ -7,6 +7,7 @@ This application is a simple bulletin
 ## How to Install and Run:
 
 Download Client.py
+
 Download Server.py
 
 Open up two different terminals.
