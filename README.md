@@ -7,7 +7,7 @@ This application is a simple bulletin
 ## How to Install and Run:
 1. Download `Client.py` and `Server.py`
 2. Change the ip in both files to your IPv4
-    Try `127.0.0.1` if you're having trouble
+    - Try `127.0.0.1` if you're having trouble
 3. Open up two different terminals.
 4. On one terminal, navigate to the folder containing `Server.py` and run it with `py Server.py`.
 5. On the other terminal, navigate to the folder containing `Client.py` and run it with `py Client.py`.
