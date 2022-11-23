@@ -8,7 +8,6 @@ messageID = 0
 HEADER_LENGTH = 10
 IP = "192.168.1.46"
 PORT = 6789
-my_username = input("Username: ")
 
 # Create a socket
 # socket.AF_INET - address family, IPv4, some otehr possible are AF_INET6, AF_BLUETOOTH, AF_UNIX
@@ -41,7 +40,20 @@ def send_message(message_to_send):
     message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
     client_socket.send(message_header + message)
 
-send_message(my_username)
+isUsed = True
+while isUsed:
+    my_username = input("Username: ")
+
+    send_message(my_username)
+    client_socket.setblocking(1)
+    isUsed = client_socket.recv(1)
+    client_socket.setblocking(0)
+    isUsed = isUsed.decode('utf-8')
+    
+    if isUsed == "1":
+        print("Please input a unique username")
+    else:
+        break
     
 # Get list of users on server
 def getUsers():
@@ -155,7 +167,6 @@ while True:
         messageID = messageID + 1
 
         message = message.decode('utf-8')
-        message = message.lower()
         if message.startswith("!!getMessage"):
             client_socket.setblocking(1)
             recentMessage = client_socket.recv(1024)

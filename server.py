@@ -89,11 +89,22 @@ while True:
             client_socket, client_address = server_socket.accept()
 
             # Receive client's name
-            user = receive_message(client_socket)
+            isUsernameUsed = True
+            while isUsernameUsed:
+                user = receive_message(client_socket)
 
-            # If false, client disconnected before they sent their name
-            if user is False:
-                continue
+                # If false, client disconnected before they sent their name
+                if user is False:
+                    continue         
+
+                isUsernameUsed = False
+                for client in clients:
+                    if user['data'] == clients[client]['data']:
+                        isUsernameUsed = True
+                if isUsernameUsed:
+                    client_socket.send('1'.encode('utf-8'))
+                else:
+                    client_socket.send('0'.encode('utf-8'))
 
             sockets_list.append(client_socket)
 
