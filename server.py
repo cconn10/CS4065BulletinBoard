@@ -5,11 +5,12 @@ from datetime import date
 messageID = 0
 HEADER_LENGTH = 10
 
-IP = "127.0.0.1"
+IP = "192.168.1.46"
 PORT = 6789
 
 messageID = 0
 messageList = {}
+messageList['public'] = []
 
 # Create a socket
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -23,7 +24,7 @@ server_socket.listen()
 
 sockets_list = [server_socket]
 
-room_users = {"Public": []}
+room_users = {"public": []}
 
 # List of connected clients - socket as a key, user header and name as data
 clients = {}
@@ -112,9 +113,7 @@ while True:
 
             # Save username and username header
             clients[client_socket] = user
-            room_users["Public"].append(client_socket) 
-
-            print(room_users)
+            room_users["public"].append(client_socket) 
 
             client_count_header = f"{len(clients):<{HEADER_LENGTH}}".encode('utf-8')
 
@@ -129,10 +128,11 @@ while True:
             # Send last 2 messages to new client, it puts last 2 messages all in one string for more consistent results
             string = '0'
             client_socket.setblocking(1)
-            if len(messageList) >= 2:
-                string = f'2\n{messageID - 2}\n{messageList[messageID - 2]}\n{messageID - 1}\n{messageList[messageID - 1]}'
-            elif len(messageList) == 1:
-                string = f'1\n{messageID - 1}\n{messageList[messageID - 1]}'
+            if len(messageList['public']) >= 2:
+                string = '2' + "\n" + str(messageList['public'][-2]['MessageID']) + "\n" + str(messageList['public'][-2]['Subject']) + "\n" + str(messageList['public'][-2]['Date']) + "\n" + str(messageList['public'][-2]['Sender'])\
+                         + "\n" + str(messageList['public'][-1]['MessageID']) + "\n" + str(messageList['public'][-1]['Subject']  + "\n" + str(messageList['public'][-1]['Date']) + "\n" + str(messageList['public'][-1]['Sender']))
+            elif len(messageList['public']) == 1:
+                string = '1' + "\n" + str(str(messageList['public'][-1]['MessageID']) + "\n" + str(messageList['public'][-1]['Subject'])  + "\n" + str(messageList['public'][-1]['Date']) + "\n" + str(messageList['public'][-1]['Sender']))
             client_socket.send(string.encode('utf-8'))
             client_socket.setblocking(0)
                 
@@ -144,9 +144,13 @@ while True:
 
         # Else existing socket is sending a message
         else:
-
+            
             # Receive message
             message = receive_message(notified_socket)
+
+            for room in room_users:
+                if notified_socket in room_users[room]:
+                    notified_socket.send(str(len(messageList[room])).encode('utf-8'))
 
             # If false, client disconnected
             if message is False:
@@ -158,10 +162,6 @@ while True:
 
             print(f'Received message from {user["data"].decode("utf-8")}: {message["data"].decode("utf-8")}')
             archiveMessage = str(f'{user["data"].decode("utf-8")} > {message["data"].decode("utf-8")} > {str(date.today())}')
-            messageList[messageID] = archiveMessage
-            messageID = messageID + 1
-            #send_message_all(f'MessageID from server: {str(messageID + 1)}')
-            #print("MessageID:", messageID)
             messageText = message['data'].decode("utf-8").lower()
             if(messageText.startswith("!!")):
                 if messageText.startswith("!!leave"):
@@ -170,36 +170,58 @@ while True:
                     notified_socket.close()
                 elif messageText.startswith("!!users"):
                     getUsers(client_count_header, clients)
-                elif messageText.startswith("!!getMessage"):
+                elif messageText.startswith("!!getmessage"):
                     try:
-                        # Get ID and check to see if it is valid
-                        idCmd = int(messageText[12:])
-                        tempMessage = messageList[idCmd].split(" > ")
-                        getSubject = tempMessage[1]
-                        print(f'{user["data"].decode("utf-8")} requested the message: {getSubject}')
-                        # If ID is valid print message
-                        if idCmd >= 0 and idCmd < len(messageList):
-                            notified_socket.send(f'Message Content of ID {idCmd}: {getSubject}'.encode('utf-8'))
+                        for room in room_users:
+                            if notified_socket in room_users[room]:                           
+                                # Get ID and check to see if it is valid
+                                idCmd = int(messageText[12:])
+                                Subject = messageList[room][idCmd]['Subject']
+                                print(f'{user["data"].decode("utf-8")} requested the message: {Subject}')
+                                # If ID is valid print message
+                                if idCmd >= 0 and idCmd < len(messageList[room]):
+                                    notified_socket.send(f'Message Content of ID {idCmd}: {Subject}'.encode('utf-8'))
+                                else:
+                                    notified_socket.send("Wrong parameters or messageID out of range, ex: !!getMessage 1".encode('utf-8'))
                     except:
                         notified_socket.send("Wrong parameters or messageID out of range, ex: !!getMessage 1".encode('utf-8'))
                 elif messageText.startswith("!!join"):
                     roomName = messageText[7:]
                     if roomName not in room_users:
+                        messageList[roomName] = []
                         room_users[roomName] = []
+                        notified_socket.send(f"Created Room: {roomName}".encode('utf-8'))
+                        notified_socket.send('0'.encode('utf-8'))
+                    else:
+                        notified_socket.send(f"Joined Room: {roomName}".encode('utf-8'))
+                        notified_socket.send(str(len(messageList[roomName])).encode('utf-8'))
                     for room in room_users:
                         if notified_socket in room_users[room]:
                             room_users[room].remove(notified_socket) 
-                    room_users[roomName].append(notified_socket) 
-                else:
-                    notified_socket.send("Command not recognized, use !!help to see list of available commands")
-                continue
+                    room_users[roomName].append(notified_socket)
+                elif messageText.startswith("!!rooms"):
+                    sendMessage = ""
+                    for room in room_users:
+                        sendMessage = sendMessage + str(f'{room} + ')
+                    sendMessage = sendMessage[:-3]
+                    notified_socket.send(sendMessage.encode('utf-8'))
+                    continue
+            else:
+                for room in room_users:
+                    if notified_socket in room_users[room]:
+                        dict = {}
+                        dict['MessageID'] = len(messageList[room])
+                        dict['Sender'] = user["data"].decode("utf-8")
+                        dict['Date'] = str(date.today())
+                        dict['Subject'] = message["data"].decode("utf-8")
+                        messageList[room].append(dict)
+                messageID = messageID + 1
 
             for room in room_users:
                 currentRoom = room_users[room]
                 if notified_socket in currentRoom:
                     # Iterate over connected clients and broadcast message
                     for client_socket in currentRoom:
-                        print(currentRoom)
                         # But don't sent it to sender
                         if client_socket != notified_socket:
 

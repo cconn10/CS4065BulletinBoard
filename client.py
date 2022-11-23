@@ -6,7 +6,7 @@ from datetime import date
 
 messageID = 0
 HEADER_LENGTH = 10
-IP = "127.0.0.1"
+IP = "192.168.1.46"
 PORT = 6789
 
 # Create a socket
@@ -82,18 +82,15 @@ recentMessage = client_socket.recv(1024)
 recentMessage = str(recentMessage.decode('utf-8'))
 recentMessage = recentMessage.split("\n")
 print("\nRecent Messages:")
-if recentMessage[0] == '0':
+length = recentMessage[0]
+if length == '0':
     print("None")
 else:
-    for i in range(1, len(recentMessage), 2):
+    for i in range(1, len(recentMessage), 4):
         messageID = int(recentMessage[i])
-        # Splits message into username and subject
-        recentMessage[i + 1] = str(recentMessage[i + 1])
-        tempMessage = recentMessage[i + 1]
-        tempMessage = tempMessage.split(">")
-        username = tempMessage[0]
-        subject = tempMessage[1]
-        postDate = tempMessage[2]
+        subject = recentMessage[i + 1]
+        postDate = recentMessage[i + 2]
+        username = recentMessage[i + 3]
         print(f"MessageID: {str(messageID)}\nSender: {username}\nDate: {postDate}\nSubject: {subject}\n")
     messageID = messageID + 1
 client_socket.setblocking(0)
@@ -150,7 +147,7 @@ def recieveAllMessages():
 while True:
 
     # Wait for user to input a message
-    print("Enter Subject, press 'Enter' to post.")
+    print("Enter Message, press 'Enter' to post.")
     message = input(f'{my_username}: ')
     print()
 
@@ -159,35 +156,67 @@ while True:
         
         # Encode message to bytes, prepare header and convert to bytes, like for username above, then send
         recieveAllMessages()
-        test = f"MessageID: {str(messageID)}\nSender: {my_username}\nDate: {date.today()}\nSubject: {message}\n"
-        print("Message Sent:\n" + test)
         message = message.encode('utf-8')
         message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
         
         client_socket.send(message_header + message)
-
-        messageID = messageID + 1
+        client_socket.setblocking(1)
+        messageTest = client_socket.recv(2)
+        messageTest = messageTest.decode('utf-8')
+        client_socket.setblocking(0)
 
         message = message.decode('utf-8')
-        if message.startswith("!!getMessage"):
-            client_socket.setblocking(1)
-            recentMessage = client_socket.recv(1024)
-            recentMessage.decode('utf-8')
-            recentMessage = str(recentMessage)
-            recentMessage = recentMessage.split("'")
-            print(recentMessage[1])
-            client_socket.setblocking(0)
-        if message.startswith("!!help"):
-            print("List of Commands:")
-            print(f"!!getMessage {{id}}: Get Message with Specific Message ID as Parameter.")
-            print("!!help: Get List of Commands.")
-            print("!!leave: Leave the Chat.")
-            print("!!users: Get List of Other Users in Chat Room.")
-            print("!!rooms: Get List of Existing Chat Rooms.")
-            print(f"!!join {{name}}: Join Room with the Specified Name or Create Room if it Doesn't Exist.")
-            print()
-        if message.startswith("!!users"):
-            getUsers()
+        test = f"MessageID: {str(messageTest)}\nSender: {my_username}\nDate: {date.today()}\nSubject: {message}\n"
+        if message.startswith("!!"):
+            if message.startswith("!!getMessage"):
+                client_socket.setblocking(1)
+                recentMessage = client_socket.recv(1024)
+                recentMessage.decode('utf-8')
+                recentMessage = str(recentMessage)
+                recentMessage = recentMessage.split("'")
+                print(recentMessage[1])
+                client_socket.setblocking(0)
+            elif message.startswith("!!help"):
+                print("List of Commands:")
+                print(f"!!getMessage {{id}}: Get Message with Specific Message ID as Parameter.")
+                print("!!help: Get List of Commands.")
+                print("!!leave: Leave the Chat.")
+                print("!!refresh: Refresh Board to check for any new messages.")
+                print("!!users: Get List of Other Users in Chat Room.")
+                print("!!rooms: Get List of Existing Chat Rooms.")
+                print(f"!!join {{name}}: Join Room with the Specified Name or Create Room if it Doesn't Exist.")
+                print()
+            elif message.startswith("!!users"):
+                getUsers()
+            elif message.startswith("!!leave"):
+                continue
+            elif message.startswith("!!rooms"):
+                client_socket.setblocking(1)
+                debugMessage = client_socket.recv(1024)
+                client_socket.setblocking(0)
+                debugMessage = debugMessage.decode('utf-8')
+                debugMessage = debugMessage.split(" + ")
+                print("Rooms Available:")
+                for msg in debugMessage:
+                    print(msg)
+                print()
+            elif message.startswith("!!join"):   
+                client_socket.setblocking(1)
+                debugMessage = client_socket.recv(1024)
+                messageLength = client_socket.recv(2)
+                client_socket.setblocking(0)
+                debugMessage = debugMessage.decode('utf-8')
+                messageLength = messageLength.decode('utf-8')
+                print(messageLength)
+                print(debugMessage)
+            elif message.startswith("!!refresh"):
+                recieveAllMessages()
+            else:
+                print("Command not recognized, use !!help to see list of available commands")
+        else:
+            print("Message Sent:\n" + test)
+            messageID = messageID + 1
+
 
     
     
