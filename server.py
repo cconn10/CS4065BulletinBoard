@@ -153,7 +153,7 @@ while True:
             user = clients[notified_socket]
 
             print(f'Received message from {user["data"].decode("utf-8")}: {message["data"].decode("utf-8")}')
-            archiveMessage = str(f'{user["data"].decode("utf-8")} > {message["data"].decode("utf-8")}')
+            archiveMessage = str(f'{user["data"].decode("utf-8")} > {message["data"].decode("utf-8")} > {str(date.today())}')
             messageList[messageID] = archiveMessage
             messageID = messageID + 1
             #send_message_all(f'MessageID from server: {str(messageID + 1)}')
@@ -172,12 +172,12 @@ while True:
                     try:
                         # Get ID and check to see if it is valid
                         idCmd = int(messageText[12:])
-                        index = messageList[idCmd].index(">")
-                        getSubject = messageList[idCmd][index + 2:]
+                        tempMessage = messageList[idCmd].split(" > ")
+                        getSubject = tempMessage[1]
                         print(f'{user["data"].decode("utf-8")} requested the message: {getSubject}')
                         # If ID is valid print message
                         if idCmd >= 0 and idCmd < len(messageList):
-                            notified_socket.send(f'Message of ID {idCmd}: {getSubject}'.encode('utf-8'))
+                            notified_socket.send(f'Message Content of ID {idCmd}: {getSubject}'.encode('utf-8'))
                     except:
                         notified_socket.send("Wrong parameters or messageID out of range, ex: !!getMessage 1".encode('utf-8'))
 

@@ -65,7 +65,7 @@ def getUsers():
         if client_count < 1:
             raise Exception('No Other Users on the Server')
 
-        print("Users on server:")
+        print("Other Users on server:")
 
         for i in range(client_count):
             message = receive_message()
@@ -89,10 +89,13 @@ else:
     for i in range(1, len(recentMessage), 2):
         messageID = int(recentMessage[i])
         # Splits message into username and subject
-        index = recentMessage[i + 1].index(">")
-        username = recentMessage[i + 1][:index - 2]
-        subject = recentMessage[i + 1][index + 2:]
-        print(f"MessageID: {str(messageID)}\nSender: {username}\nDate: {date.today()}\nSubject: {subject}\n")
+        recentMessage[i + 1] = str(recentMessage[i + 1])
+        tempMessage = recentMessage[i + 1]
+        tempMessage = tempMessage.split(">")
+        username = tempMessage[0]
+        subject = tempMessage[1]
+        postDate = tempMessage[2]
+        print(f"MessageID: {str(messageID)}\nSender: {username}\nDate: {postDate}\nSubject: {subject}\n")
     messageID = messageID + 1
 client_socket.setblocking(0)
 
@@ -178,8 +181,9 @@ while True:
         if message.startswith("!!help"):
             print("List of Commands:")
             print("!!getMessage: Get Message with Specific Message ID as Parameter.")
-            print("!!help: Get List of Commands")
-            print("!!users: Get List of Other Users in Chat Room")
+            print("!!help: Get List of Commands.")
+            print("!!leave: Leave the Chat.")
+            print("!!users: Get List of Other Users in Chat Room.")
             print()
         if message.startswith("!!users"):
             getUsers()
