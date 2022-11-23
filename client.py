@@ -6,7 +6,7 @@ from datetime import date
 
 messageID = 0
 HEADER_LENGTH = 10
-IP = "192.168.1.46"
+IP = "127.0.0.1"
 PORT = 6789
 
 # Create a socket
@@ -28,7 +28,6 @@ def receive_message():
     if not len(message_header):
         print('Connection closed by the server')
         sys.exit()
-
     
     message_length = int(message_header.decode('utf-8').strip())
 
@@ -180,10 +179,12 @@ while True:
             client_socket.setblocking(0)
         if message.startswith("!!help"):
             print("List of Commands:")
-            print("!!getMessage: Get Message with Specific Message ID as Parameter.")
+            print(f"!!getMessage {{id}}: Get Message with Specific Message ID as Parameter.")
             print("!!help: Get List of Commands.")
             print("!!leave: Leave the Chat.")
             print("!!users: Get List of Other Users in Chat Room.")
+            print("!!rooms: Get List of Existing Chat Rooms.")
+            print(f"!!join {{name}}: Join Room with the Specified Name or Create Room if it Doesn't Exist.")
             print()
         if message.startswith("!!users"):
             getUsers()

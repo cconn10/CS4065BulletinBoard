@@ -5,7 +5,7 @@ from datetime import date
 messageID = 0
 HEADER_LENGTH = 10
 
-IP = "192.168.1.46"
+IP = "127.0.0.1"
 PORT = 6789
 
 messageID = 0
@@ -22,6 +22,8 @@ server_socket.bind((IP, PORT))
 server_socket.listen()
 
 sockets_list = [server_socket]
+
+room_users = {"Public": []}
 
 # List of connected clients - socket as a key, user header and name as data
 clients = {}
@@ -110,7 +112,9 @@ while True:
 
             # Save username and username header
             clients[client_socket] = user
+            room_users["Public"].append(client_socket) 
 
+            print(room_users)
 
             client_count_header = f"{len(clients):<{HEADER_LENGTH}}".encode('utf-8')
 
@@ -158,17 +162,15 @@ while True:
             messageID = messageID + 1
             #send_message_all(f'MessageID from server: {str(messageID + 1)}')
             #print("MessageID:", messageID)
-            messageText = message['data'].decode("utf-8")
-            if messageText.startswith("!!"):
-                match(messageText):
-                    case "!!leave":
-                        disconnect_user(clients, notified_socket)
-                        notified_socket.shutdown(socket.SHUT_RDWR)
-                        notified_socket.close()
-                        continue
-                    case "!!users":
-                        getUsers(client_count_header, clients)
-                if messageText.startswith("!!getMessage"):
+            messageText = message['data'].decode("utf-8").lower()
+            if(messageText.startswith("!!")):
+                if messageText.startswith("!!leave"):
+                    disconnect_user(clients, notified_socket)
+                    notified_socket.shutdown(socket.SHUT_RDWR)
+                    notified_socket.close()
+                elif messageText.startswith("!!users"):
+                    getUsers(client_count_header, clients)
+                elif messageText.startswith("!!getMessage"):
                     try:
                         # Get ID and check to see if it is valid
                         idCmd = int(messageText[12:])
@@ -180,16 +182,30 @@ while True:
                             notified_socket.send(f'Message Content of ID {idCmd}: {getSubject}'.encode('utf-8'))
                     except:
                         notified_socket.send("Wrong parameters or messageID out of range, ex: !!getMessage 1".encode('utf-8'))
+                elif messageText.startswith("!!join"):
+                    roomName = messageText[7:]
+                    if roomName not in room_users:
+                        room_users[roomName] = []
+                    for room in room_users:
+                        if notified_socket in room_users[room]:
+                            room_users[room].remove(notified_socket) 
+                    room_users[roomName].append(notified_socket) 
+                else:
+                    notified_socket.send("Command not recognized, use !!help to see list of available commands")
+                continue
 
-            # Iterate over connected clients and broadcast message
-            for client_socket in clients:
+            for room in room_users:
+                currentRoom = room_users[room]
+                if notified_socket in currentRoom:
+                    # Iterate over connected clients and broadcast message
+                    for client_socket in currentRoom:
+                        print(currentRoom)
+                        # But don't sent it to sender
+                        if client_socket != notified_socket:
 
-                # But don't sent it to sender
-                if client_socket != notified_socket:
-
-                    # Send user and message (both with their headers)
-                    # We are reusing here message header sent by sender, and saved username header send by user when he connected
-                    client_socket.send(user['header'] + user['data'] + message['header'] + message['data'])
+                            # Send user and message (both with their headers)
+                            # We are reusing here message header sent by sender, and saved username header send by user when he connected
+                            client_socket.send(user['header'] + user['data'] + message['header'] + message['data'])
 
     # Handles some socket exceptions just in case
     for notified_socket in exception_sockets:
