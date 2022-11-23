@@ -44,30 +44,33 @@ def send_message(message_to_send):
 send_message(my_username)
     
 # Get list of users on server
-try:
-    client_socket.setblocking(True)
+def getUsers():
+    try:
+        client_socket.setblocking(True)
 
-    client_count = int(receive_message())
+        client_count = int(receive_message())
 
-    if client_count < 1:
-        raise Exception('No Other Users on the Server')
+        if client_count < 1:
+            raise Exception('No Other Users on the Server')
 
-    print("Users on server:")
+        print("Users on server:")
 
-    for i in range(client_count):
-        message = receive_message()
-        print(message)
-            
+        for i in range(client_count):
+            message = receive_message()
+            print(message)
+                
+        client_socket.setblocking(False)
+    except Exception as e:
+        print(str(e))
     client_socket.setblocking(False)
-except Exception as e:
-    print(str(e))
-client_socket.setblocking(False)
+
+getUsers()
 
 client_socket.setblocking(1)
 recentMessage = client_socket.recv(1024)
 recentMessage = str(recentMessage.decode('utf-8'))
 recentMessage = recentMessage.split("\n")
-print("Recent Messages:")
+print("\nRecent Messages:")
 if recentMessage[0] == '0':
     print("None")
 else:
@@ -81,6 +84,7 @@ else:
     messageID = messageID + 1
 client_socket.setblocking(0)
 
+print("Welcome " + my_username + "! Type in !!help for all commands in the chat room!")
 
 
 def recieveAllMessages():
@@ -132,6 +136,7 @@ def recieveAllMessages():
 while True:
 
     # Wait for user to input a message
+    print("Enter Subject, press 'Enter' to post.")
     message = input(f'{my_username}: ')
     print()
 
@@ -150,6 +155,7 @@ while True:
         messageID = messageID + 1
 
         message = message.decode('utf-8')
+        message = message.lower()
         if message.startswith("!!getMessage"):
             client_socket.setblocking(1)
             recentMessage = client_socket.recv(1024)
@@ -158,7 +164,14 @@ while True:
             recentMessage = recentMessage.split("'")
             print(recentMessage[1])
             client_socket.setblocking(0)
+        if message.startswith("!!help"):
+            print("List of Commands:")
+            print("!!getMessage: Get Message with Specific Message ID as Parameter.")
+            print("!!help: Get List of Commands")
+            print("!!users: Get List of Other Users in Chat Room")
+            print()
+        if message.startswith("!!users"):
+            getUsers()
 
-        message = message.encode('utf-8')
     
     

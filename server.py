@@ -66,6 +66,16 @@ def send_message_all(message):
                 f"{len(message):<{HEADER_LENGTH}}".encode('utf-8') + 
                 (message.encode('utf-8')))
 
+def getUsers(client_count_header, clients):
+    client_count_header = f"{len(clients):<{HEADER_LENGTH}}".encode('utf-8')
+
+    # Sends number of clients currently connected - 1, so as to not include the client it is sending to
+    client_socket.send(client_count_header + str(len(clients)-1).encode())
+    for client in clients:
+        if clients[client] != user:
+            print()
+            client_socket.send(clients[client]['header'] + clients[client]['data'])
+
 while True:
 
     # Returns reading, writing, and exception sockets:
@@ -145,6 +155,8 @@ while True:
                         notified_socket.shutdown(socket.SHUT_RDWR)
                         notified_socket.close()
                         continue
+                    case "!!users":
+                        getUsers(client_count_header, clients)
                 if messageText.startswith("!!getMessage"):
                     try:
                         # Get ID and check to see if it is valid
@@ -154,7 +166,7 @@ while True:
                         print(f'{user["data"].decode("utf-8")} requested the message: {getSubject}')
                         # If ID is valid print message
                         if idCmd >= 0 and idCmd < len(messageList):
-                            notified_socket.send(f'Message of ID {idCmd}:{getSubject}'.encode('utf-8'))
+                            notified_socket.send(f'Message of ID {idCmd}: {getSubject}'.encode('utf-8'))
                     except:
                         notified_socket.send("Wrong parameters or messageID out of range, ex: !!getMessage 1".encode('utf-8'))
 
