@@ -1,4 +1,4 @@
-# Simple Bulletin Board Using Socket Programming Project
+# Simple Bulletin Board Using Socket Programming
 
 ## Created by John Thompson and Colin Conn
 
