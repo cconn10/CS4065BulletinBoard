@@ -5,7 +5,7 @@ from datetime import date
 messageID = 0
 HEADER_LENGTH = 10
 
-IP = "192.168.1.46"
+IP = "127.0.0.1"
 PORT = 6789
 
 messageID = 0
