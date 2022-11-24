@@ -10,8 +10,6 @@ IP = "192.168.1.46"
 PORT = 6789
 
 # Create a socket
-# socket.AF_INET - address family, IPv4, some otehr possible are AF_INET6, AF_BLUETOOTH, AF_UNIX
-# socket.SOCK_STREAM - TCP, conection-based, socket.SOCK_DGRAM - UDP, connectionless, datagrams, socket.SOCK_RAW - raw IP packets
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # Connect to a given ip and port
@@ -127,7 +125,7 @@ def recieveAllMessages():
             # Receive our "header" containing username length, it's size is defined and constant
             username_header = client_socket.recv(HEADER_LENGTH)
 
-            # If we received no data, server gracefully closed a connection, for example using socket.close() or socket.shutdown(socket.SHUT_RDWR)
+            # If we received no data, server gracefully closed a connection
             if not len(username_header):
                 print('Connection closed by the server')
                 sys.exit()
@@ -138,7 +136,7 @@ def recieveAllMessages():
             # Receive and decode username
             username = client_socket.recv(username_length).decode('utf-8')
 
-            # Now do the same for message (as we received username, we received whole message, there's no need to check if it has any length)
+            # Now do the same for message
             message_header = client_socket.recv(HEADER_LENGTH)
             message_length = int(message_header.decode('utf-8').strip())
             message = client_socket.recv(message_length).decode('utf-8')
@@ -150,10 +148,7 @@ def recieveAllMessages():
                 print(f'{username} > {message}\n')
 
     except IOError as e:
-        # This is normal on non blocking connections - when there are no incoming data error is going to be raised
-        # Some operating systems will indicate that using AGAIN, and some using WOULDBLOCK error code
-        # We are going to check for both - if one of them - that's expected, means no incoming data, continue as normal
-        # If we got different error code - something happened
+        # This is normal on non blocking connections
         if e.errno != errno.EAGAIN and e.errno != errno.EWOULDBLOCK:
             print('Reading error: {}'.format(str(e)))
             sys.exit()
@@ -180,36 +175,39 @@ while True:
         message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
         
         client_socket.send(message_header + message)
-        client_socket.setblocking(1)
-        messageTest = client_socket.recv(2)
-        messageTest = messageTest.decode('utf-8')
-        client_socket.setblocking(0)
 
         message = message.decode('utf-8')
-        if message.startswith("!!getMessage"):
-            client_socket.setblocking(1)
-            recentMessage = client_socket.recv(1024)
-            recentMessage.decode('utf-8')
-            recentMessage = str(recentMessage)
-            recentMessage = recentMessage.split("'")
-            print(recentMessage[1])
-            client_socket.setblocking(0)
-        if message.startswith("!!help"):
-            print("List of Commands:")
-            print(f"!!getMessage {{id}}: Get Message with Specific Message ID as Parameter.")
-            print("!!help: Get List of Commands.")
-            print("!!leave: Disconnect from the Server.")
-            print(f"!!leave {{chat name}}: Leave a Specific Chat Room.")
-            print("!!users: Get List of Other Users in Chat Room.")
-            print("!!rooms: Get List of Existing Chat Rooms.")
-            print(f"!!join {{chat name}}: Join Room with the Specified Name or Create Room if it Doesn't Exist.")
-            print()
-        if message.startswith("!!users"):
-            get_users()
-        if message.startswith("!!rooms"):
-            get_rooms()
-        if message.startswith("!!") and message.split()[0] not in commands: 
-            print("Command not recognized, use !!help to see list of available commands")
+        test = f"MessageID: {str(messageID)}\nSender: {my_username}\nDate: {date.today()}\nSubject: {message}\n"
+        # Each Command
+        if message.startswith("!!"):
+            message = message.lower()
+            if message.startswith("!!getmessage"):
+                client_socket.setblocking(1)
+                recentMessage = client_socket.recv(1024)
+                recentMessage.decode('utf-8')
+                recentMessage = str(recentMessage)
+                recentMessage = recentMessage.split("'")
+                print(recentMessage[1])
+                client_socket.setblocking(0)
+            elif message.startswith("!!help"):
+                print("List of Commands:")
+                print(f"!!getMessage {{id}}: Get Message with Specific Message ID as Parameter.")
+                print("!!help: Get List of Commands.")
+                print("!!leave: Disconnect from the Server.")
+                print(f"!!leave {{chat name}}: Leave a Specific Chat Room.")
+                print("!!users: Get List of Other Users in Chat Room.")
+                print("!!rooms: Get List of Existing Chat Rooms.")
+                print(f"!!join {{chat name}}: Join Room with the Specified Name or Create Room if it Doesn't Exist.")
+                print()
+            elif message.startswith("!!users"):
+                get_users()
+            elif message.startswith("!!rooms"):
+                get_rooms()
+            elif message.startswith("!!") and message.split()[0] not in commands: 
+                print("Command not recognized, use !!help to see list of available commands")
+        else:
+            print("Message Sent:\n" + test)
+            messageID = messageID + 1
 
     
     
